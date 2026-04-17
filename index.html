@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Local Folder Image Shuffle</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      cursor: pointer;
+      user-select: none;
+      flex-direction: column;
+      color: #aaa;
+      font-family: sans-serif;
+    }
+
+    img {
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+      display: none;
+    }
+
+    .overlay {
+      position: fixed;
+      bottom: 10px;
+      font-size: 14px;
+    }
+
+    .start {
+      text-align: center;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="start">
+    <button id="pickBtn">Choose Image Folder</button>
+    <p>Select a folder from your Desktop to begin</p>
+  </div>
+
+  <img id="viewer" />
+  <div class="overlay">Click anywhere for next image</div>
+
+  <script>
+    let images = [];
+    let shuffled = [];
+    let index = 0;
+
+    const imgEl = document.getElementById("viewer");
+    const startEl = document.querySelector(".start");
+    const pickBtn = document.getElementById("pickBtn");
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function showImage() {
+      imgEl.src = shuffled[index];
+    }
+
+    function nextImage() {
+      index++;
+      if (index >= shuffled.length) {
+        shuffled = shuffle([...images]);
+        index = 0;
+      }
+      showImage();
+    }
+
+    document.body.addEventListener("click", () => {
+      if (shuffled.length > 0) nextImage();
+    });
+
+    pickBtn.addEventListener("click", async () => {
+      const dirHandle = await window.showDirectoryPicker();
+      images = [];
+
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === "file") {
+          const file = await entry.getFile();
+          if (file.type.startsWith("image/")) {
+            images.push(URL.createObjectURL(file));
+          }
+        }
+      }
+
+      if (images.length === 0) {
+        alert("No images found in that folder.");
+        return;
+      }
+
+      shuffled = shuffle([...images]);
+      index = 0;
+
+      startEl.style.display = "none";
+      imgEl.style.display = "block";
+
+      showImage();
+    });
+  </script>
+
+</body>
+</html>
